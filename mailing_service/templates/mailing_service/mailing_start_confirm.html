@@ -1,0 +1,54 @@
+{% extends 'mailing_service/base.html' %}
+
+{% block title %}Запуск рассылки #{{ mailing.pk }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4 class="card-title mb-0">Подтверждение запуска</h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Вы уверены, что хотите запустить рассылку #{{mailing.pk}}?</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Информация о рассылке:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Сообщение:</strong> {{ mailing.message.subject }}</li>
+                            <li><strong>Получателей:</strong> {{ mailing.recipients.count }}</li>
+                            <li><strong>Период отправки:</strong> {{ mailing.start_time|date:"d.m.Y H:i" }} - {{ mailing.end_time|date:"d.m.Y H:i" }}</li>
+                            <li><strong>Текущее время:</strong> {% now "d.m.Y H:i" %}</li>
+                        </ul>
+                    </div>
+                    
+                    {% now "Y-m-d H:i:s" as current_time %}
+                    {% if mailing.start_time <= current_time and current_time <= mailing.end_time %}
+                        <div class="alert alert-success">
+                            ✓ Рассылка может быть отправлена (текущее время в пределах допустимого)
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger">
+                            ✗ Рассылка не может быть отправлена сейчас! Разрешенный период: {{ mailing.start_time|date:"d.m.Y H:i" }} - {{ mailing.end_time|date:"d.m.Y H:i" }}
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'mailing_service:mailing_detail' mailing.pk %}" class="btn btn-secondary">
+                                Отмена
+                            </a>
+                            <button type="submit" class="btn btn-warning" 
+                                {% if current_time < mailing.start_time or current_time > mailing.end_time %}disabled{% endif %}>
+                                <i class="fas fa-play"></i> Запустить рассылку
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

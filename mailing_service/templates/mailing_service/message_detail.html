@@ -1,0 +1,56 @@
+{% extends 'mailing_service/base.html' %}
+{% load custom_filter %}
+{% block title %} Сообщение #{{ object.pk }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Детальная информация о сообщении</h3>
+                    <span class="badge bg-primary">ID: {{ message.pk }}</span>
+                </div>
+                <div class="card-body">
+
+                    <!-- Тема письма -->
+                    <div class="row mb-3">
+                        <div class="col-sm-3 fw-bold">Тема письма:</div>
+                        <div class="col-sm-9">
+                            <h5 class="text-primary">{{ message.subject }}</h5>
+                        </div>
+                    </div>
+
+                    <!-- Тело письма -->
+                    <div class="row mb-3">
+                        <div class="col-sm-3 fw-bold">Содержание:</div>
+                        <div class="col-sm-9">
+                            <div class=" bg-dark rounded">
+                                {{ message.body|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'mailing_service:message_list' %}"
+                           class="btn btn-secondary">
+                            ← Назад к списку
+                        </a>
+                        <div>
+                            <a href="{% url 'mailing_service:message_update' message.pk %}"
+                               class="btn btn-warning">
+                                ✏️ Редактировать
+                            </a>
+                            <a href="{% url 'mailing_service:message_confirm_delete' message.pk %}"
+                               class="btn btn-danger">
+                                🗑️ Удалить
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends 'mailing_service/base.html' %}
+
+{% block title %}Рассылка #{{ object.pk }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'mailing_service:mailing_list' %}">Рассылки</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Рассылка #{{ object.pk }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">Детали рассылки #{{object.pk}}</h4>
+                    <div>
+                        <a href="{% url 'mailing_service:mailing_update' object.pk %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Редактировать
+                        </a>
+                        <a href="{% url 'mailing_service:mailing_confirm_delete' object.pk %}"
+                           class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Удалить
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Статус:</th>
+                                    <td>
+                                        {% with status=object.update_status %}
+                                        <span class="badge
+                                                {% if status == 'created' %}badge-warning
+                                                {% elif status == 'started' %}badge-success
+                                                {% else %}badge-secondary{% endif %}">
+                                                {{ object.get_status_display }}
+                                            </span>
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Начало:</th>
+                                    <td>{{ object.start_time|date:"d.m.Y H:i:s" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Окончание:</th>
+                                    <td>{{ object.end_time|date:"d.m.Y H:i:s" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Длительность:</th>
+                                    <td>{{ object.end_time|timeuntil:object.start_time }}</td>
+                                </tr>
+
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Статистика</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Круговая диаграмма -->
+                                    <div style="position: relative; height: 150px; width: 100%;">
+                                        <canvas id="statsChart"></canvas>
+                                    </div>
+
+                                    <!-- Статистика в цифрах -->
+                                    <div class="d-flex justify-content-around mt-3 text-center">
+                                        <div>
+                                            <span class="badge bg-primary rounded-pill fs-6">{{ total_attempts|default:"0" }}</span>
+                                            <div><small>Всего</small></div>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-success rounded-pill fs-6">{{ success_count|default:"0" }}</span>
+                                            <div><small>Успешно</small></div>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-danger rounded-pill fs-6">{{ failed_count|default:"0" }}</span>
+                                            <div><small>Ошибок</small></div>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-info rounded-pill fs-6">{{ success_rate|default:"0" }}%</span>
+                                            <div><small>Конверсия</small></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Сообщение</h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6>{{ object.message.subject }}</h6>
+                                    <p>{{ object.message.body|linebreaks }}</p>
+                                    {% if object.message.attachments.exists %}
+                                    <div class="mt-3">
+                                        <strong>Вложения:</strong>
+                                        <ul class="list-unstyled">
+                                            {% for attachment in object.message.attachments.all %}
+                                            <li>
+                                                <i class="fas fa-paperclip"></i>
+                                                <a href="{{ attachment.file.url }}" target="_blank">{{
+                                                    attachment.filename }}</a>
+                                                ({{ attachment.file.size|filesizeformat }})
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Получатели ({{ object.recipients.count }})</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if object.recipients.exists %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                            <tr>
+                                                <th>Email</th>
+                                                <th>Имя</th>
+                                                <th>Комментарий</th>
+                                                <th>Статус отправки</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for recipient in object.recipients.all %}
+                                            <tr>
+                                                <td>{{ recipient.email }}</td>
+                                                <td>{{ recipient.full_name|default:"-" }}</td>
+                                                <td>{{ recipient.comment|truncatechars:30|default:"-" }}</td>
+                                                <td>
+                                                    {% with attempt=recipient.attempts.last %}
+                                                    {% if attempt %}
+                                                    <span class="badge
+                                                                        {% if attempt.status == 'success' %}badge-success
+                                                                        {% elif attempt.status == 'failed' %}badge-danger
+                                                                        {% else %}badge-warning{% endif %}">
+                                                                        {{ attempt.get_status_display }}
+                                                                    </span>
+                                                    <br>
+                                                    <small>{{ attempt.attempt_time|date:"d.m.Y H:i" }}</small>
+                                                    {% else %}
+                                                    <span class="badge badge-secondary">Ожидает</span>
+                                                    {% endif %}
+                                                    {% endwith %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted">Нет получателей для этой рассылки</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Действия</h5>
+                </div>
+                {% if object.status == 'created' or object.status == 'started' %}
+                <form method="post" action="{% url 'mailing_service:mailing_start' object.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-play"></i> Запустить сейчас
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title">Последние попытки</h5>
+                </div>
+                <div class="card-body">
+                    {% with attempts=object.attempts.all|slice:":5" %}
+                    {% if attempts %}
+                    <div class="list-group">
+                        {% for attempt in attempts %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small>{{ attempt.recipient.email }}</small>
+                                <span class="badge
+                                                {% if attempt.status == 'success' %}badge-success
+                                                {% elif attempt.status == 'failed' %}badge-danger
+                                                {% else %}badge-warning{% endif %}">
+                                                {{ attempt.get_status_display }}
+                                            </span>
+                            </div>
+                            <small class="text-muted">{{ attempt.attempt_time|date:"d.m.Y H:i" }}</small>
+                            {% if attempt.server_response %}
+                            <p class="mt-2 mb-0"><small>Ответ: {{ attempt.server_response }}</small></p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if object.attempts.count > 5 %}
+                    <a href="#" class="btn btn-link btn-sm mt-2">
+                        Показать все ({{ object.attempts.count }})
+                    </a>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-muted">Нет попыток отправки</p>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('statsChart').getContext('2d');
+
+        // Данные из контекста
+        const successCount = {{ success_count|default:0 }};
+        const failedCount = {{ failed_count|default:0 }};
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Успешно', 'Ошибки'],
+                datasets: [{
+                    data: [successCount, failedCount],
+                    backgroundColor: ['#28a745', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false  // Скрываем легенду, т.к. есть цифры снизу
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    });
+</script>
+{% endblock %}

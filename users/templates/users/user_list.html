@@ -1,0 +1,150 @@
+{% extends 'mailing_service/base.html' %}
+
+{% block title %}Управление пользователями{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="fas fa-users"></i>
+                Пользователи сервиса
+            </h2>
+            <p class="text-muted">Всего пользователей: {{ total_users }} (активных: {{ active_users }})</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list"></i> Список пользователей
+            </h5>
+            <span class="badge bg-light text-dark">Найдено: {{ users.count }}</span>
+        </div>
+        <div class="card-body">
+            {% if users %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Email</th>
+                        <th>Имя</th>
+                        <th>Фамилия</th>
+                        <th>Роль</th>
+                        <th>Статус</th>
+                        <th>Рассылок</th>
+                        <th>Клиентов</th>
+                        <th>Дата регистрации</th>
+                        <th>Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for user_item in users %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <strong>{{ user_item.email }}</strong>
+                        </td>
+                        <td>{{ user_item.first_name|default:"-" }}</td>
+                        <td>{{ user_item.last_name|default:"-" }}</td>
+                        <td>
+                            {% if user_item.is_superuser %}
+                            <span class="badge bg-danger">Админ</span>
+                            {% elif user_item.is_moderator %}
+                            <span class="badge bg-warning text-dark">Модератор</span>
+                            {% else %}
+                            <span class="badge bg-info">Пользователь</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user_item.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Неактивен</span>
+                            {% endif %}
+
+                            {% if user_item.is_blocked %}
+                            <span class="badge bg-danger">Заблокирован</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                                    <span class="badge bg-primary rounded-pill">
+                                        {{ user_item.mailings_count }}
+                                    </span>
+                        </td>
+                        <td>
+                                    <span class="badge bg-info rounded-pill">
+                                        {{ user_item.clients_count }}
+                                    </span>
+                        </td>
+                        <td>
+                            <small>{{ user_item.date_joined|date:"d.m.Y H:i" }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                {% if not user_item.is_superuser and user_item != request.user %}
+                                {% if user_item.is_active %}
+                                <a href="{% url 'users:user_block' user_item.pk %}"
+                                   class="btn btn-outline-danger"
+                                   title="Заблокировать"
+                                   onclick="return confirm('Вы уверены, что хотите заблокировать пользователя {{ user_item.email }}?')">
+                                    🔒
+                                </a>
+                                {% else %}
+                                <a href="{% url 'users:user_unblock' user_item.pk %}"
+                                   class="btn btn-outline-success"
+                                   title="Разблокировать"
+                                   onclick="return confirm('Вы уверены, что хотите разблокировать пользователя {{ user_item.email }}?')">
+                                    🔓
+                                </a>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; Первая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                            <span class="page-link">
+                                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                            </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Нет зарегистрированных пользователей.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
