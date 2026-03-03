@@ -1,0 +1,271 @@
+{% extends 'mailing_service/base.html' %}
+{% load static %}
+{% load custom_filter %}
+{% block title %}Главная - Статистика рассылок{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5">
+                <i class="fas fa-chart-line"></i>
+                Панель управления рассылками
+            </h1>
+            <p class="lead text-muted">Основные показатели и статистика системы</p>
+        </div>
+    </div>
+
+    <!-- Основные метрики (3 карточки) -->
+    <div class="row mb-4">
+        <!-- Общее количество рассылок -->
+        <div class="col-md-4">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Всего рассылок</h6>
+                            <h2 class="display-4">{{ total_mailings }}</h2>
+                        </div>
+                        <i class="fas fa-envelope-open-text fa-3x opacity-50"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 text-white-50">
+                    <small>Создано за все время</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Активные рассылки -->
+        <div class="col-md-4">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Активные рассылки</h6>
+                            <h2 class="display-4">{{ active_mailings }}</h2>
+                        </div>
+                        <i class="fas fa-play-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 text-white-50">
+                    <small>Выполняются сейчас</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уникальные получатели -->
+        <div class="col-md-4">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Получатели</h6>
+                            <h2 class="display-4">{{ total_recipients }}</h2>
+                        </div>
+                        <i class="fas fa-users fa-3x opacity-50"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 text-white-50">
+                    <small>Уникальных клиентов в базе</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Детальная статистика -->
+    <div class="row mb-4">
+        <!-- Распределение по статусам -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i>
+                        Распределение по статусам
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+
+                    <div class="row mt-3 text-center">
+                        <div class="col-4">
+                            <span class="badge bg-warning text-dark p-2">Создана</span>
+                            <h4>{{ mailings_by_status.created }}</h4>
+                        </div>
+                        <div class="col-4">
+                            <span class="badge bg-success p-2">Активна</span>
+                            <h4>{{ mailings_by_status.started }}</h4>
+                        </div>
+                        <div class="col-4">
+                            <span class="badge bg-secondary p-2">Завершена</span>
+                            <h4>{{ mailings_by_status.finished }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Временная шкала -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i>
+                        Состояние рассылок
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>⏳ Ожидают запуска:</span>
+                            <span class="badge bg-warning text-dark">{{ scheduled_mailings }}</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div class="progress-bar bg-warning"
+                                 style="width: {% if total_mailings > 0 %}{{ scheduled_mailings|multiply:100|divide:total_mailings }}{% else %}0{% endif %}%"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <span>▶️ Активные сейчас:</span>
+                            <span class="badge bg-success">{{ active_mailings }}</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div class="progress-bar bg-success"
+                                 style="width: {% if total_mailings > 0 %}{{ active_mailings|multiply:100|divide:total_mailings }}{% else %}0{% endif %}%"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <span>✅ Завершенные:</span>
+                            <span class="badge bg-secondary">{{ finished_mailings }}</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div class="progress-bar bg-secondary"
+                                 style="width: {% if total_mailings > 0 %}{{ finished_mailings|multiply:100|divide:total_mailings }}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Визуализация временного окна -->
+                    <div class="mt-4">
+                        <h6>Временная шкала рассылок:</h6>
+                        <div class="position-relative" style="height: 60px; background: #f8f9fa; border-radius: 5px;">
+                            <div class="position-absolute bg-primary"
+                                 style="left: 0; width: 30%; height: 100%; opacity: 0.3;"></div>
+                            <div class="position-absolute bg-success"
+                                 style="left: 30%; width: 40%; height: 100%; opacity: 0.3;"></div>
+                            <div class="position-absolute bg-primary"
+                                 style="left: 70%; width: 30%; height: 100%; opacity: 0.3;"></div>
+
+                            <div class="position-absolute" style="left: 19%; top: -20px;">
+                                <small>start_time</small>
+                            </div>
+                            <div class="position-absolute" style="left: 71%; top: -20px;">
+                                <small>end_time</small>
+                            </div>
+                            <div class="position-absolute" style="left: 40%; top: 20px;">
+                                <span class="badge bg-success">Активные рассылки</span>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                Активные рассылки: текущая дата между start_time и end_time, статус "Запущена"
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние рассылки -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i>
+                        Последние рассылки
+                    </h5>
+                    <a href="{% url 'mailing_service:mailing_list' %}" class="btn btn-sm btn-outline-primary">
+                        Все рассылки →
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_mailings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Сообщение</th>
+                                        <th>Начало</th>
+                                        <th>Окончание</th>
+                                        <th>Статус</th>
+                                        <th>Получателей</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mailing in recent_mailings %}
+                                    <tr>
+                                        <td>#{{ mailing.pk }}</td>
+                                        <td><a href="{% url 'mailing_service:mailing_detail' mailing.pk %}">{{ mailing.message.subject|truncatechars:30 }}</a></td>
+                                        <td>{{ mailing.start_time|date:"d.m.Y H:i" }}</td>
+                                        <td>{{ mailing.end_time|date:"d.m.Y H:i" }}</td>
+                                        <td>
+                                            <span class="badge
+                                                {% if mailing.status == 'created' %}bg-warning text-dark
+                                                {% elif mailing.status == 'started' %}bg-success
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ mailing.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ mailing.recipients.count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">Нет созданных рассылок</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // График распределения по статусам
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Создано', 'Активно', 'Завершено'],
+            datasets: [{
+                data: [
+                    {{ mailings_by_status.created }},
+                    {{ mailings_by_status.started }},
+                    {{ mailings_by_status.finished }}
+                ],
+                backgroundColor: ['#ffc107', '#28a745', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            cutout: '60%'
+        }
+    });
+});
+</script>
+{% endblock %}

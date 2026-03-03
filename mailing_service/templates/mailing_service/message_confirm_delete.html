@@ -1,0 +1,23 @@
+{% extends 'mailing_service/base.html' %}
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-6">
+            <form class="row" method="post" enctype="multipart/form-data">
+                <div class="card">
+                    <p class="card-text">Вы действительно хотите удалить сообщение? <em>{{object.subject}}</em>?</p>
+                    <div class="card-body">
+                        {% csrf_token %}
+                    </div>
+                    <div class="card-footer d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            Удалить
+                        </button>
+                        <a class="btn btn-secondary" href="{% url 'mailing_service:message_list' %}" role="button">Отменить</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

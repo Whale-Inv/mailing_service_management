@@ -1,0 +1,25 @@
+{% extends 'mailing_service/base.html' %}
+{% block title %} Добавить сообщение {% endblock %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-6">
+      <form class="row" method="post" enctype="multipart/form-data">
+        <div class="card">
+          <div class="card-body">
+            {% csrf_token %}
+            {{ form.as_p }}
+          </div>
+          <button type="submit" class="btn btn-primary mb-2">
+            {% if object %}
+            Сохранить
+            {% else %}
+            Добавить
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

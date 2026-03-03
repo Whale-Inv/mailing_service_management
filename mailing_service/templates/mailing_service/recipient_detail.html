@@ -1,0 +1,62 @@
+{% extends 'mailing_service/base.html' %}
+{% load custom_filter %}
+{% block title %}Пользователь #{{ object.email }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>Детальная информация о получателе</h3>
+                    <span class="badge bg-primary">ID: {{ recipient.pk }}</span>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Основная информация -->
+                    <div class="row mb-3">
+                        <div class="col-sm-4 fw-bold">Email:</div>
+                        <div class="col-sm-8">
+                            <a href="mailto:{{ recipient.email }}">{{ recipient.email }}</a>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-4 fw-bold">ФИО:</div>
+                        <div class="col-sm-8">{{ recipient.full_name }}</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-4 fw-bold">Комментарий:</div>
+                        <div class="col-sm-8">
+                            {% if recipient.comment %}
+                                {{ recipient.comment|linebreaks }}
+                            {% else %}
+                                <span class="text-muted">Нет комментария</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопки действий -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'mailing_service:recipient_list' %}" 
+                           class="btn btn-secondary">
+                            ← Назад к списку
+                        </a>
+                        <div>
+                            <a href="{% url 'mailing_service:recipient_update' recipient.pk %}"
+                               class="btn btn-warning">
+                                ✏️ Редактировать
+                            </a>
+                            <a href="{% url 'mailing_service:recipient_confirm_delete' recipient.pk %}"
+                               class="btn btn-danger">
+                                🗑️ Удалить
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
